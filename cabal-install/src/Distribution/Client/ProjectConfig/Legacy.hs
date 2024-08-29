@@ -858,9 +858,9 @@ convertLegacyBuildOnlyFlags
   configFlags
   installFlags
   clientInstallFlags
-  haddockFlags
-  _
-  _ =
+  _haddockFlags
+  _testFlags
+  _benchmarkFlags =
     ProjectConfigBuildOnly{..}
     where
       projectConfigClientInstallFlags = clientInstallFlags
@@ -877,6 +877,7 @@ convertLegacyBuildOnlyFlags
 
       CommonSetupFlags
         { setupVerbosity = projectConfigVerbosity
+        , setupKeepTempFiles = projectConfigKeepTempFiles
         } = commonFlags
 
       InstallFlags
@@ -895,10 +896,6 @@ convertLegacyBuildOnlyFlags
         , installKeepGoing = projectConfigKeepGoing
         , installOfflineMode = projectConfigOfflineMode
         } = installFlags
-
-      HaddockFlags
-        { haddockKeepTempFiles = projectConfigKeepTempFiles -- TODO: this ought to live elsewhere
-        } = haddockFlags
 
 convertToLegacyProjectConfig :: ProjectConfig -> LegacyProjectConfig
 convertToLegacyProjectConfig
@@ -1057,6 +1054,8 @@ convertToLegacyAllPackageConfig
     where
       commonFlags =
         mempty
+          { setupKeepTempFiles = projectConfigKeepTempFiles
+          }
 
       configFlags =
         ConfigFlags
@@ -1121,7 +1120,8 @@ convertToLegacyAllPackageConfig
 
       haddockFlags =
         mempty
-          { haddockKeepTempFiles = projectConfigKeepTempFiles
+          { haddockIndex = projectConfigHaddockIndex
+          -- TODO: Can other settings be propagated here?
           }
 
 convertToLegacyPerPackageConfig :: PackageConfig -> LegacyPackageConfig
@@ -1222,7 +1222,6 @@ convertToLegacyPerPackageConfig PackageConfig{..} =
         , haddockQuickJump = packageConfigHaddockQuickJump
         , haddockHscolourCss = packageConfigHaddockHscolourCss
         , haddockContents = packageConfigHaddockContents
-        , haddockKeepTempFiles = mempty
         , haddockIndex = packageConfigHaddockIndex
         , haddockBaseUrl = packageConfigHaddockBaseUrl
         , haddockResourcesDir = packageConfigHaddockResourcesDir
