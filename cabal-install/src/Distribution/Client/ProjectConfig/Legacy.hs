@@ -641,7 +641,7 @@ convertLegacyProjectConfig
       configBuildOnly =
         convertLegacyBuildOnlyFlags
           globalFlags
-          configShFlags
+          (configFlags <> configShFlags)
           installSharedFlags
           clientInstallFlags
           haddockFlags
@@ -758,7 +758,8 @@ convertLegacyPerPackageFlags
     PackageConfig{..}
     where
       ConfigFlags
-        { configProgramPaths
+        { configCommonFlags = commonFlags
+        , configProgramPaths
         , configProgramArgs
         , configProgramPathExtra = packageConfigProgramPathExtra
         , configVanillaLib = packageConfigVanillaLib
@@ -800,6 +801,10 @@ convertLegacyPerPackageFlags
 
       packageConfigCoverage = coverage <> libcoverage
       -- TODO: defer this merging to the resolve phase
+
+      CommonSetupFlags
+        { setupKeepTempFiles = packageConfigKeepTempFiles
+        } = commonFlags
 
       InstallFlags
         { installDocumentation = packageConfigDocumentation
@@ -1042,7 +1047,8 @@ convertToLegacySharedConfig
 convertToLegacyAllPackageConfig :: ProjectConfig -> LegacyPackageConfig
 convertToLegacyAllPackageConfig
   ProjectConfig
-    { projectConfigShared = ProjectConfigShared{..}
+    { projectConfigBuildOnly = ProjectConfigBuildOnly{..}
+    , projectConfigShared = ProjectConfigShared{..}
     } =
     LegacyPackageConfig
       { legacyConfigureFlags = configFlags
@@ -1054,6 +1060,9 @@ convertToLegacyAllPackageConfig
     where
       commonFlags =
         mempty
+          { -- { setupVerbosity = projectConfigVerbosity
+            setupKeepTempFiles = projectConfigKeepTempFiles
+          }
 
       configFlags =
         ConfigFlags
@@ -1131,6 +1140,8 @@ convertToLegacyPerPackageConfig PackageConfig{..} =
   where
     commonFlags =
       mempty
+        { setupKeepTempFiles = packageConfigKeepTempFiles
+        }
     configFlags =
       ConfigFlags
         { configCommonFlags = commonFlags

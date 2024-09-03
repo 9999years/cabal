@@ -290,8 +290,9 @@ data PackageConfig = PackageConfig
   , packageConfigDumpBuildInfo :: Flag DumpBuildInfo
   , packageConfigRunTests :: Flag Bool -- TODO: [required eventually] use this
   , packageConfigDocumentation :: Flag Bool -- TODO: [required eventually] use this
-  -- Haddock options
-  , packageConfigHaddockHoogle :: Flag Bool -- TODO: [required eventually] use this
+  , packageConfigKeepTempFiles :: Flag Bool
+  , -- Haddock options
+    packageConfigHaddockHoogle :: Flag Bool -- TODO: [required eventually] use this
   , packageConfigHaddockHtml :: Flag Bool -- TODO: [required eventually] use this
   , packageConfigHaddockHtmlLocation :: Flag String -- TODO: [required eventually] use this
   , packageConfigHaddockForeignLibs :: Flag Bool -- TODO: [required eventually] use this
