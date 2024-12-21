@@ -197,6 +197,8 @@ module Distribution.Simple.Utils
   , exceptionWithCallStackPrefix
   ) where
 
+import Prelude ()
+
 import Distribution.Compat.Async (waitCatch, withAsyncNF)
 import Distribution.Compat.CopyFile
 import Distribution.Compat.FilePath as FilePath
@@ -205,6 +207,11 @@ import Distribution.Compat.Lens (Lens', over)
 import Distribution.Compat.Prelude
 import Distribution.Compat.Stack
 import Distribution.ModuleName as ModuleName
+import Distribution.OutputMarker
+  ( clearMarkers
+  , withOutputMarker
+  , withTrailingNewline
+  )
 import Distribution.Simple.Errors
 import Distribution.Simple.PreProcess.Types
 import Distribution.System
@@ -213,9 +220,14 @@ import Distribution.Utils.Generic
 import Distribution.Utils.IOData (IOData (..), IODataMode (..), KnownIODataMode (..))
 import qualified Distribution.Utils.IOData as IOData
 import Distribution.Utils.Path
+import Distribution.VerboseException
+  ( VerboseException (..)
+  , exceptionWithCallStackPrefix
+  , exceptionWithMetadata
+  , withTimestamp
+  )
 import Distribution.Verbosity
 import Distribution.Version
-import Prelude ()
 
 #ifdef CURRENT_PACKAGE_KEY
 #define BOOTSTRAPPED_CABAL 1
@@ -236,10 +248,10 @@ import Data.Typeable
 import qualified Control.Exception as Exception
 import Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime)
 import Distribution.Compat.Process (proc)
+import Distribution.IntoCabalException (IntoCabalException (intoCabalException))
 import Foreign.C.Error (Errno (..), ePIPE)
 import qualified GHC.IO.Exception as GHC
 import GHC.Stack (HasCallStack)
-import Numeric (showFFloat)
 import System.Directory
   ( Permissions (executable)
   , createDirectory
@@ -386,29 +398,13 @@ die' verbosity msg = withFrozenCallStack $ do
     =<< pure . addErrorPrefix
     =<< prefixWithProgName msg
 
--- Type which will be a wrapper for cabal -exceptions and cabal-install exceptions
-data VerboseException a = VerboseException CallStack POSIXTime Verbosity a
-  deriving (Show, Typeable)
-
 -- Function which will replace the existing die' call sites
-dieWithException :: (HasCallStack, Show a1, Typeable a1, Exception (VerboseException a1)) => Verbosity -> a1 -> IO a
+dieWithException :: (HasCallStack, IntoCabalException e) => Verbosity -> e -> IO a
 dieWithException verbosity exception = do
   ts <- getPOSIXTime
-  throwIO $ VerboseException callStack ts verbosity exception
-
--- Instance for Cabal Exception which will display error code and error message with callStack info
-instance Exception (VerboseException CabalException) where
-  displayException :: VerboseException CabalException -> [Char]
-  displayException (VerboseException stack timestamp verb cabalexception) =
-    withOutputMarker
-      verb
-      ( concat
-          [ "Error: [Cabal-"
-          , show (exceptionCode cabalexception)
-          , "]\n"
-          ]
-      )
-      ++ exceptionWithMetadata stack timestamp verb (exceptionMessage cabalexception)
+  throwIO $
+    VerboseException callStack ts verbosity $
+      intoCabalException exception
 
 dieNoWrap :: Verbosity -> String -> IO a
 dieNoWrap verbosity msg = withFrozenCallStack $ do
@@ -671,53 +667,6 @@ wrapTextVerbosity verb
   | isVerboseNoWrap verb = withTrailingNewline
   | otherwise = withTrailingNewline . wrapText
 
--- | Prepends a timestamp if @+timestamp@ verbosity flag is set
---
--- This is used by 'withMetadata'
-withTimestamp :: Verbosity -> POSIXTime -> String -> String
-withTimestamp v ts msg
-  | isVerboseTimestamp v = msg'
-  | otherwise = msg -- no-op
-  where
-    msg' = case lines msg of
-      [] -> tsstr "\n"
-      l1 : rest -> unlines (tsstr (' ' : l1) : map (contpfx ++) rest)
-
-    -- format timestamp to be prepended to first line with msec precision
-    tsstr = showFFloat (Just 3) (realToFrac ts :: Double)
-
-    -- continuation prefix for subsequent lines of msg
-    contpfx = replicate (length (tsstr " ")) ' '
-
--- | Wrap output with a marker if @+markoutput@ verbosity flag is set.
---
--- NB: Why is markoutput done with start/end markers, and not prefixes?
--- Markers are more convenient to add (if we want to add prefixes,
--- we have to 'lines' and then 'map'; here's it's just some
--- concatenates).  Note that even in the prefix case, we can't
--- guarantee that the markers are unambiguous, because some of
--- Cabal's output comes straight from external programs, where
--- we don't have the ability to interpose on the output.
---
--- This is used by 'withMetadata'
-withOutputMarker :: Verbosity -> String -> String
-withOutputMarker v xs | not (isVerboseMarkOutput v) = xs
-withOutputMarker _ "" = "" -- Minor optimization, don't mark uselessly
-withOutputMarker _ xs =
-  "-----BEGIN CABAL OUTPUT-----\n"
-    ++ withTrailingNewline xs
-    ++ "-----END CABAL OUTPUT-----\n"
-
--- | Append a trailing newline to a string if it does not
--- already have a trailing newline.
-withTrailingNewline :: String -> String
-withTrailingNewline "" = ""
-withTrailingNewline (x : xs) = x : go x xs
-  where
-    go _ (c : cs) = c : go c cs
-    go '\n' "" = ""
-    go _ "" = "\n"
-
 -- | Prepend a call-site and/or call-stack based on Verbosity
 withCallStackPrefix :: WithCallStack (TraceWhen -> Verbosity -> String -> String)
 withCallStackPrefix tracer verbosity s =
@@ -784,44 +733,6 @@ withMetadata ts marker tracer verbosity x =
       . clearMarkers
       . withTimestamp verbosity ts
     $ x
-
--- | Add all necessary metadata to a logging message
-exceptionWithMetadata :: CallStack -> POSIXTime -> Verbosity -> String -> String
-exceptionWithMetadata stack ts verbosity x =
-  withTrailingNewline
-    . exceptionWithCallStackPrefix stack verbosity
-    . withOutputMarker verbosity
-    . clearMarkers
-    . withTimestamp verbosity ts
-    $ x
-
-clearMarkers :: String -> String
-clearMarkers s = unlines . filter isMarker $ lines s
-  where
-    isMarker "-----BEGIN CABAL OUTPUT-----" = False
-    isMarker "-----END CABAL OUTPUT-----" = False
-    isMarker _ = True
-
--- | Append a call-site and/or call-stack based on Verbosity
-exceptionWithCallStackPrefix :: CallStack -> Verbosity -> String -> String
-exceptionWithCallStackPrefix stack verbosity s =
-  s
-    ++ withFrozenCallStack
-      ( ( if isVerboseCallSite verbosity
-            then
-              parentSrcLocPrefix
-                ++
-                -- Hack: need a newline before starting output marker :(
-                if isVerboseMarkOutput verbosity
-                  then "\n"
-                  else ""
-            else ""
-        )
-          ++ ( if verbosity >= verbose
-                then prettyCallStack stack ++ "\n"
-                else ""
-             )
-      )
 
 -- -----------------------------------------------------------------------------
 -- rawSystem variants

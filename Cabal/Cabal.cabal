@@ -66,8 +66,8 @@ library
     ghc-options: -Wnoncanonical-monadfail-instances
 
   exposed-modules:
-    Distribution.Backpack.Configure
     Distribution.Backpack.ComponentsGraph
+    Distribution.Backpack.Configure
     Distribution.Backpack.ConfiguredComponent
     Distribution.Backpack.DescribeUnitId
     Distribution.Backpack.FullUnitId
@@ -75,20 +75,19 @@ library
     Distribution.Backpack.ModSubst
     Distribution.Backpack.ModuleShape
     Distribution.Backpack.PreModuleShape
-    Distribution.Utils.IOData
-    Distribution.Utils.LogProgress
-    Distribution.Utils.MapAccum
     Distribution.Compat.CreatePipe
     Distribution.Compat.Directory
     Distribution.Compat.Environment
     Distribution.Compat.FilePath
     Distribution.Compat.Internal.TempFile
-    Distribution.Compat.ResponseFile
     Distribution.Compat.Prelude.Internal
     Distribution.Compat.Process
+    Distribution.Compat.ResponseFile
     Distribution.Compat.Stack
     Distribution.Compat.Time
+    Distribution.IntoCabalException
     Distribution.Make
+    Distribution.OutputMarker
     Distribution.PackageDescription.Check
     Distribution.ReadE
     Distribution.Simple
@@ -97,8 +96,8 @@ library
     Distribution.Simple.Build.Inputs
     Distribution.Simple.Build.Macros
     Distribution.Simple.Build.PackageInfoModule
-    Distribution.Simple.Build.PathsModule
     Distribution.Simple.BuildPaths
+    Distribution.Simple.Build.PathsModule
     Distribution.Simple.BuildTarget
     Distribution.Simple.BuildToolDepends
     Distribution.Simple.BuildWay
@@ -111,9 +110,9 @@ library
     Distribution.Simple.Flag
     Distribution.Simple.GHC
     Distribution.Simple.GHCJS
-    Distribution.Simple.Haddock
     Distribution.Simple.Glob
     Distribution.Simple.Glob.Internal
+    Distribution.Simple.Haddock
     Distribution.Simple.HaskellSuite
     Distribution.Simple.Hpc
     Distribution.Simple.Install
@@ -142,6 +141,9 @@ library
     Distribution.Simple.Program.Types
     Distribution.Simple.Register
     Distribution.Simple.Setup
+    Distribution.Simple.SetupHooks.Errors
+    Distribution.Simple.SetupHooks.Internal
+    Distribution.Simple.SetupHooks.Rule
     Distribution.Simple.ShowBuildInfo
     Distribution.Simple.SrcDist
     Distribution.Simple.Test
@@ -150,24 +152,26 @@ library
     Distribution.Simple.Test.Log
     Distribution.Simple.UHC
     Distribution.Simple.UserHooks
-    Distribution.Simple.SetupHooks.Errors
-    Distribution.Simple.SetupHooks.Internal
-    Distribution.Simple.SetupHooks.Rule
     Distribution.Simple.Utils
+    Distribution.SomeCabalException
     Distribution.TestSuite
     Distribution.Types.AnnotatedId
     Distribution.Types.ComponentInclude
-    Distribution.Types.DumpBuildInfo
-    Distribution.Types.PackageName.Magic
     Distribution.Types.ComponentLocalBuildInfo
+    Distribution.Types.DumpBuildInfo
+    Distribution.Types.GivenComponent
     Distribution.Types.LocalBuildConfig
     Distribution.Types.LocalBuildInfo
-    Distribution.Types.TargetInfo
-    Distribution.Types.GivenComponent
+    Distribution.Types.PackageName.Magic
     Distribution.Types.ParStrat
+    Distribution.Types.TargetInfo
+    Distribution.Utils.IOData
     Distribution.Utils.Json
+    Distribution.Utils.LogProgress
+    Distribution.Utils.MapAccum
     Distribution.Utils.NubList
     Distribution.Utils.Progress
+    Distribution.VerboseException
     Distribution.Verbosity
     Distribution.Verbosity.Internal
 

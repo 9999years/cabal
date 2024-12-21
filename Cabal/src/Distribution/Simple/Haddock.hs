@@ -1498,7 +1498,7 @@ hscolour'
   lbi
   suffixes
   flags =
-    either (\excep -> onNoHsColour $ exceptionMessage excep) (\(hscolourProg, _, _) -> go hscolourProg)
+    either (\excep -> onNoHsColour $ prettyShow excep) (\(hscolourProg, _, _) -> go hscolourProg)
       =<< lookupProgramVersion
         verbosity
         hscolourProgram

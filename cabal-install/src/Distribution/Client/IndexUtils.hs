@@ -457,8 +457,8 @@ readRepoIndex verbosity repoCtxt repo idxState =
       if isDoesNotExistError e
         then do
           case repo of
-            RepoRemote{..} -> warn verbosity $ exceptionMessageCabalInstall $ MissingPackageList repoRemote
-            RepoSecure{..} -> warn verbosity $ exceptionMessageCabalInstall $ MissingPackageList repoRemote
+            RepoRemote{..} -> warn verbosity $ prettyShow $ MissingPackageList repoRemote
+            RepoSecure{..} -> warn verbosity $ prettyShow $ MissingPackageList repoRemote
             RepoLocalNoIndex local _ ->
               warn verbosity $
                 "Error during construction of local+noindex "

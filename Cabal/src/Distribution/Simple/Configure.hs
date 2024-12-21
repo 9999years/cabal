@@ -74,6 +74,7 @@ import Distribution.Compat.Stack
 import Distribution.Compiler
 import Distribution.InstalledPackageInfo (InstalledPackageInfo)
 import qualified Distribution.InstalledPackageInfo as IPI
+import Distribution.IntoCabalException (IntoCabalException)
 import Distribution.Package
 import Distribution.PackageDescription
 import Distribution.PackageDescription.Check hiding (doesFileExist)
@@ -2138,7 +2139,7 @@ getInstalledPackagesMonitorFiles verbosity comp mbWorkDir packageDBs progdb plat
 -- | Looks up the 'InstalledPackageInfo' of the given 'UnitId's from the
 -- 'PackageDBStack' in the 'LocalBuildInfo'.
 getInstalledPackagesById
-  :: (Exception (VerboseException exception), Show exception, Typeable exception)
+  :: IntoCabalException exception
   => Verbosity
   -> LocalBuildInfo
   -> (UnitId -> exception)
