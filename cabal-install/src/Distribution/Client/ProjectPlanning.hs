@@ -434,7 +434,7 @@ rebuildProjectConfig
           { projectConfigShared
           , projectConfigBuildOnly
           } = do
-          pkgLocations <- findProjectPackages distDirLayout projectConfig
+          pkgLocations <- findProjectPackages verbosity distDirLayout projectConfig
           -- Create folder only if findProjectPackages did not throw a
           -- BadPackageLocations exception.
           liftIO $ do

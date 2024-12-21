@@ -1,9 +1,9 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Handling project configuration.
 module Distribution.Client.ProjectConfig
@@ -145,6 +145,7 @@ import Distribution.Fields
   , runParseResult
   , showPWarning
   )
+import Distribution.IntoCabalException (IntoCabalException (..))
 import Distribution.Package
 import Distribution.PackageDescription.Parsec
   ( parseGenericPackageDescription
@@ -906,6 +907,13 @@ data BadPackageLocations
   = BadPackageLocations (Set ProjectConfigProvenance) [BadPackageLocation]
   deriving (Show, Typeable)
 
+instance IntoCabalException BadPackageLocations where
+  type TheCabalException BadPackageLocations = CabalInstallException
+  intoCabalException e =
+    BadPackageLocations' $
+      text $
+        renderBadPackageLocations e
+
 instance Exception BadPackageLocations where
   displayException = renderBadPackageLocations
 
@@ -1032,10 +1040,12 @@ renderBadPackageLocationMatch bplm = case bplm of
 --
 -- Throws 'BadPackageLocations'.
 findProjectPackages
-  :: DistDirLayout
+  :: Verbosity
+  -> DistDirLayout
   -> ProjectConfig
   -> Rebuild [ProjectPackageLocation]
 findProjectPackages
+  verbosity
   DistDirLayout{distProjectRootDirectory}
   ProjectConfig{..} = do
     requiredPkgs <- findPackageLocations True projectPackages
@@ -1051,7 +1061,7 @@ findProjectPackages
           partitionEithers <$> traverse (findPackageLocation required) pkglocstr
         unless (null problems) $
           liftIO $
-            throwIO $
+            dieWithException verbosity $
               BadPackageLocations projectConfigProvenance problems
         return (concat pkglocs)
 
